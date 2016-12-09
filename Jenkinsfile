@@ -5,6 +5,8 @@
  * Expected parameters:
  *   ARTIFACTORY_URL        Artifactory server location
  *   ARTIFACTORY_OUT_REPO   local repository name to upload image
+ *   ARTIFACTORY_SERVER_NAME  artifactory server to use (configuration of
+ *                              artifactory plugin)
  *   DOCKER_REGISTRY_SERVER Docker server to use to push image
  *   DOCKER_REGISTRY_SSL    Docker registry is SSL-enabled if true
  *   OS                     distribution name to build for (debian, ubuntu, etc.)
@@ -84,7 +86,8 @@ def art = artifactory.connection(
     ARTIFACTORY_URL,
     DOCKER_REGISTRY_SERVER,
     DOCKER_REGISTRY_SSL ?: true,
-    ARTIFACTORY_OUT_REPO
+    ARTIFACTORY_OUT_REPO,
+    ARTIFACTORE_SERVER_NAME ?: "default"
 )
 
 def git_commit = [:]
@@ -227,7 +230,7 @@ node('docker') {
             def fh = new File("${workspace}/${file}".trim())
             buildSteps[fh.name.split('_')[0]] = artifactory.uploadPackageStep(
                 art,
-                fh,
+                fh.name,
                 properties,
                 DIST,
                 'main',
