@@ -24,6 +24,7 @@ RUN [ "x${ARTIFACTORY_URL}" != "x" ] && ( \
         && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
         && wget -O - http://apt.tcpcloud.eu/public.gpg | apt-key add - \
         && echo "deb http://apt.tcpcloud.eu/debian/ jessie extra" >>/etc/apt/sources.list \
+        && echo "deb http://ftp.de.debian.org/debian sid main" >>/etc/apt/sources.list \
     )
 
 # Install requirements for Contrail build
@@ -47,6 +48,8 @@ RUN apt-get update && apt-get install -y \
         python-setuptools \
         python-nose \
         sudo \
+        flex \
+        bison \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN useradd -s /bin/bash --uid 1000 -m jenkins

@@ -63,7 +63,8 @@ def sourcePackages = [
     "ifmap-server",
     "neutron-plugin-contrail",
     "ceilometer-plugin-contrail",
-    "contrail-heat"
+    "contrail-heat",
+    "contrail-vrouter-dpdk"
 ]
 
 def inRepos = [
