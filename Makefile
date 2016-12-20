@@ -69,9 +69,8 @@ build-binary-%:
 	$(eval PACKAGE := $(patsubst build-binary-%,%,$@))
 	(rm -rf src/build/${PACKAGE} || true)
 	docker run -u 1000 -t -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash -c "dpkg-source -x src/build/packages/${PACKAGE}_*.dsc src/build/${PACKAGE}; \
-                cd src/build/${PACKAGE}; sudo apt-get update; sudo apt-get install equivs; sudo cd /ssd/ccp-contrail-pipeline/src/build/packages/${PACKAGE}/; \
-                sudo mk-build-deps -t "apt-get -o Debug::pkgProblemResolver=yes -y" -i control; \
-                cd src/build/${pkg}; debuild --no-lintian -uc -us ${opts}
+                cd src/build/packages/${PACKAGE}; sudo apt-get update; sudo apt-get install equivs; \
+                sudo mk-build-deps -t \"apt-get -y\" -i; cd ../../${PACKAGE}; debuild --no-lintian -uc -us ${opts}"
 
 checkout: \
 	checkout-contrail-build \
