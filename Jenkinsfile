@@ -110,8 +110,8 @@ def buildBinaryPackageStep(img, pkg, opts = '-b') {
         img.inside {
             sh("test -d src/build/${pkg} && rm -rf src/build/${pkg} || true")
             sh("dpkg-source -x src/build/packages/${pkg}_*.dsc src/build/${pkg}")
-            sh("cd src/build/${pkg}; sudo apt-get update; dpkg-checkbuilddeps 2>&1|cut -d : -f 3|sed 's,(.*),,g'|xargs sudo apt-get install -y")
-            sh("cd src/build/${pkg}; debuild --no-lintian -uc -us ${opts}")
+	    sh("cd src/build/packages/${PACKAGE}; sudo apt-get update; sudo apt-get -y install equivs;")
+            sh("sudo mk-build-deps -t \"apt-get -o Debug::pkgProblemResolver=yes -y\" -i debian/control; dpkg -i ${PACKAGE}*.deb; cd ../../${PACKAGE}; debuild --no-lintian -uc -us ${opts}")
         }
     }
 }
