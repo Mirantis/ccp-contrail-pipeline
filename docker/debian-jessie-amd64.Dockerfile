@@ -47,6 +47,7 @@ RUN apt-get update && apt-get install -y \
         python-setuptools \
         python-nose \
         sudo \
+        equivs \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN useradd -s /bin/bash --uid 1000 -m jenkins

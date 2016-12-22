@@ -2,8 +2,8 @@ SOURCE_BRANCH ?= "R3.0.2.x"
 GIT_CONTRAIL_BASE ?= ssh://admin@ci.ccp-poc.cloudlab.cz:29418
 CWD=$(shell pwd)
 
-OS   ?= debian
-DIST ?= jessie
+OS   ?= ubuntu
+DIST ?= trusty
 ARCH ?= amd64
 
 all: checkout build-image build-source build-binary
@@ -27,7 +27,7 @@ build-shell:
 	$(eval PACKAGE ?= contrail)
 	(rm -rf src/build/${PACKAGE} || true)
 	docker run -u 1000 -it -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash -c "dpkg-source -x src/build/packages/${PACKAGE}_*.dsc src/build/${PACKAGE}; \
-		cd src/build/${PACKAGE}; sudo apt-get update; dpkg-checkbuilddeps 2>&1|cut -d : -f 3|sed 's,(.*),,g'|xargs sudo apt-get install -y; bash"
+                cd src/build/${PACKAGE}; apt-get update; sudo mk-build-deps -t \"apt-get -o Debug::pkgProblemResolver=yes -y\" -i debian/control; dpkg -i *.deb; bash"
 
 clean:
 	rm -rf src/build
@@ -69,7 +69,7 @@ build-binary-%:
 	$(eval PACKAGE := $(patsubst build-binary-%,%,$@))
 	(rm -rf src/build/${PACKAGE} || true)
 	docker run -u 1000 -t -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash -c "dpkg-source -x src/build/packages/${PACKAGE}_*.dsc src/build/${PACKAGE}; \
-                cd src/build/packages/${PACKAGE}; sudo apt-get update; sudo apt-get -y install equivs; \
+                cd src/build/packages/${PACKAGE}; sudo apt-get update; \
                 sudo mk-build-deps -t \"apt-get -o Debug::pkgProblemResolver=yes -y\" -i debian/control; dpkg -i ${PACKAGE}*.deb; cd ../../${PACKAGE}; debuild --no-lintian -uc -us ${opts}"
 
 checkout: \
