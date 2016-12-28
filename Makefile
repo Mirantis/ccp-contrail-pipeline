@@ -16,6 +16,7 @@ help:
 	@echo "build-source  Build debian source packages"
 	@echo "build-binary  Build debian binary packages"
 	@echo "clean         Cleanup after previous builds"
+	@unittests "unittests  Run unittest"
 
 build-image:
 	docker build -t build-$(OS)-$(DIST)-$(ARCH) -f docker/$(OS)-$(DIST)-$(ARCH).Dockerfile docker
@@ -49,6 +50,9 @@ fetch-third-party:
 	rm -rf src/contrail-web-core/node_modules
 	mkdir src/contrail-web-core/node_modules
 	cp -rf src/contrail-webui-third-party/node_modules/* src/contrail-web-core/node_modules/
+
+unittests:
+	docker run -it -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash "unittests.sh"
 
 build-source-%:
 	$(eval PACKAGE := $(patsubst build-source-%,%,$@))
