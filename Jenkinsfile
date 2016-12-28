@@ -15,6 +15,8 @@
  *   DIST                   distribution version (jessie, trusty)
  *   ARCH                   comma-separated list of architectures to build
  *   FORCE_BUILD            Force build even when image exists
+ *   BUILD_DPDK             Build dpdk-enabled vrouter
+ *   DPDK_VERSION           DPDK version to fetch
  *   PROMOTE_ENV            Environment for promotion (default "stable")
  *   KEEP_REPOS             Always keep input repositories even on failure
  *   SOURCE_URL             URL to source code base (component names will be
@@ -63,11 +65,11 @@ def sourcePackages = [
     "contrail-web-core",
     "contrail-web-controller",
     "contrail",
-    "contrail-vrouter-dpdk",
     "ifmap-server",
     "neutron-plugin-contrail",
     "ceilometer-plugin-contrail",
-    "contrail-heat"
+    "contrail-heat",
+    "contrail-vrouter-dpdk"
 ]
 
 def inRepos = [
@@ -117,8 +119,8 @@ def buildBinaryPackageStep(img, pkg, opts = '-b') {
         img.inside {
             sh("test -d src/build/${pkg} && rm -rf src/build/${pkg} || true")
             sh("dpkg-source -x src/build/packages/${pkg}_*.dsc src/build/${pkg}")
-            sh("cd src/build/${pkg}; sudo apt-get update; dpkg-checkbuilddeps 2>&1|rev|cut -d : -f 1|rev|sed 's,(.*),,g'|xargs sudo apt-get install -y")
-            sh("cd src/build/${pkg}; debuild --no-lintian -uc -us ${opts}")
+	    sh("cd src/build/packages/${PACKAGE}; sudo apt-get update")
+            sh("sudo mk-build-deps -t \"apt-get -o Debug::pkgProblemResolver=yes -y\" -i debian/control; dpkg -i ${PACKAGE}*.deb; cd ../../${PACKAGE}; debuild --no-lintian -uc -us ${opts}")
         }
     }
 }
@@ -152,6 +154,10 @@ node('docker') {
         sh("test -e src/SConstruct || ln -s tools/build/SConstruct src/SConstruct")
         sh("test -e src/packages.make || ln -s tools/packages/packages.make src/packages.make")
         sh("test -d src/build && rm -rf src/build || true")
+
+        if (BUILD_DPDK.toBoolean() == true) {
+            sh("wget --no-check-certificate -O - ${art.url}/in-dpdk/dpdk-${DPDK_VERSION}.tar.xz | tar xJf -; mv dpdk-* dpdk")
+        }
     }
 
     if (art) {

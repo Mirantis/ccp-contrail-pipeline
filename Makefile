@@ -2,8 +2,8 @@ SOURCE_BRANCH ?= "R3.0.2.x"
 GIT_CONTRAIL_BASE ?= ssh://admin@ci.ccp-poc.cloudlab.cz:29418
 CWD=$(shell pwd)
 
-OS   ?= debian
-DIST ?= jessie
+OS   ?= ubuntu
+DIST ?= trusty
 ARCH ?= amd64
 
 all: checkout build-image build-source build-binary
@@ -16,6 +16,7 @@ help:
 	@echo "build-source  Build debian source packages"
 	@echo "build-binary  Build debian binary packages"
 	@echo "clean         Cleanup after previous builds"
+	@unittests "unittests  Run unittest"
 
 build-image:
 	docker build -t build-$(OS)-$(DIST)-$(ARCH) -f docker/$(OS)-$(DIST)-$(ARCH).Dockerfile docker
@@ -27,7 +28,7 @@ build-shell:
 	$(eval PACKAGE ?= contrail)
 	(rm -rf src/build/${PACKAGE} || true)
 	docker run -u 1000 -it -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash -c "dpkg-source -x src/build/packages/${PACKAGE}_*.dsc src/build/${PACKAGE}; \
-		cd src/build/${PACKAGE}; sudo apt-get update; dpkg-checkbuilddeps 2>&1|rev|cut -d : -f 1|rev|sed 's,(.*),,g'|xargs sudo apt-get install -y; bash"
+                cd src/build/${PACKAGE}; apt-get update; sudo mk-build-deps -t \"apt-get -o Debug::pkgProblemResolver=yes -y\" -i debian/control; dpkg -i *.deb; bash"
 
 clean:
 	rm -rf src/build
@@ -50,6 +51,9 @@ fetch-third-party:
 	mkdir src/contrail-web-core/node_modules
 	cp -rf src/contrail-webui-third-party/node_modules/* src/contrail-web-core/node_modules/
 
+unittests:
+	docker run -it -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash "unittests.sh"
+
 build-source-%:
 	$(eval PACKAGE := $(patsubst build-source-%,%,$@))
 	(rm -f src/build/packages/${PACKAGE}_* || true)
@@ -69,8 +73,8 @@ build-binary-%:
 	$(eval PACKAGE := $(patsubst build-binary-%,%,$@))
 	(rm -rf src/build/${PACKAGE} || true)
 	docker run -u 1000 -t -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash -c "dpkg-source -x src/build/packages/${PACKAGE}_*.dsc src/build/${PACKAGE}; \
-		cd src/build/${PACKAGE}; sudo apt-get update; dpkg-checkbuilddeps 2>&1|rev|cut -d : -f 1|rev|sed 's,(.*),,g'|xargs sudo apt-get install -y; \
-		cd src/build/${pkg}; debuild --no-lintian -uc -us ${opts}"
+                cd src/build/packages/${PACKAGE}; sudo apt-get update; \
+                sudo mk-build-deps -t \"apt-get -o Debug::pkgProblemResolver=yes -y\" -i debian/control; dpkg -i ${PACKAGE}*.deb; cd ../../${PACKAGE}; debuild --no-lintian -uc -us ${opts}"
 
 checkout: \
 	checkout-contrail-build \
