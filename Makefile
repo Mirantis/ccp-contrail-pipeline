@@ -52,7 +52,7 @@ fetch-third-party:
 	cp -rf src/contrail-webui-third-party/node_modules/* src/contrail-web-core/node_modules/
 
 unittests:
-	docker run -it -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash "unittests.sh"
+	docker run -u 1000 -it -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash "unittests.sh"
 
 build-source-%:
 	$(eval PACKAGE := $(patsubst build-source-%,%,$@))
