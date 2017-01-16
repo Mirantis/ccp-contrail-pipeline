@@ -22,7 +22,7 @@ build-image:
 	docker build -t build-$(OS)-$(DIST)-$(ARCH) -f docker/$(OS)-$(DIST)-$(ARCH).Dockerfile docker
 
 shell:
-	docker run -u 1000 -it -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) bash
+	docker run -u 1000 -it -v $(CWD):$(CWD) -w $(CWD) --privileged=true --rm=true build-$(OS)-$(DIST)-$(ARCH) bash
 
 build-shell:
 	$(eval PACKAGE ?= contrail)
@@ -34,7 +34,7 @@ clean:
 	rm -rf src/build
 
 test: build-source
-	docker run -u 1000 -t -v $(CWD):$(CWD) -w $(CWD)/src -e USER=jenkins --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash -c "../scripts/run_tests.sh"
+	docker run -u 1000 -t -v $(CWD):$(CWD) -w $(CWD)/src -e USER=jenkins --privileged=true --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash -c "../scripts/run_tests.sh"
 
 build-source: \
 	fetch-third-party \
