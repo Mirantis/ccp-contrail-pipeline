@@ -6,6 +6,9 @@ OS   ?= ubuntu
 DIST ?= trusty
 ARCH ?= amd64
 
+USER_ID  = $(shell id -u)
+GROUP_ID = $(shell id -g)
+
 all: checkout build-image build-source build-binary
 
 help:
@@ -19,22 +22,22 @@ help:
 	@echo "clean         Cleanup after previous builds"
 
 build-image:
-	docker build -t build-$(OS)-$(DIST)-$(ARCH) -f docker/$(OS)-$(DIST)-$(ARCH).Dockerfile docker
+	docker build --build-arg uid=$(USER_ID) -t build-$(OS)-$(DIST)-$(ARCH) -f docker/$(OS)-$(DIST)-$(ARCH).Dockerfile docker
 
 shell:
-	docker run -u 1000 -it -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) bash
+	docker run -u $(USER_ID):$(GROUP_ID) -it -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) bash
 
 build-shell:
 	$(eval PACKAGE ?= contrail)
 	(rm -rf src/build/${PACKAGE} || true)
-	docker run -u 1000 -it -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash -c "dpkg-source -x src/build/packages/${PACKAGE}_*.dsc src/build/${PACKAGE}; \
+	docker run -u $(USER_ID):$(GROUP_ID) -it -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash -c "dpkg-source -x src/build/packages/${PACKAGE}_*.dsc src/build/${PACKAGE}; \
 		cd src/build/${PACKAGE}; sudo apt-get update; dpkg-checkbuilddeps 2>&1|rev|cut -d : -f 1|rev|sed 's,(.*),,g'|xargs sudo apt-get install -y; bash"
 
 clean:
 	rm -rf src/build
 
 test: build-source
-	docker run -u 1000 -t -v $(CWD):$(CWD) -w $(CWD)/src -e USER=jenkins --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash -c "../scripts/run_tests.sh"
+	docker run -u $(USER_ID):$(GROUP_ID) -t -v $(CWD):$(CWD) -w $(CWD)/src -e USER=jenkins --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash -c "../scripts/run_tests.sh"
 
 build-source: \
 	fetch-third-party \
@@ -48,8 +51,8 @@ build-source: \
 	build-source-contrail-heat
 
 fetch-third-party:
-	docker run -u 1000 -t -v $(CWD):$(CWD) -w $(CWD)/src/third_party --rm=true build-$(OS)-$(DIST)-$(ARCH) python fetch_packages.py
-	docker run -u 1000 -t -v $(CWD):$(CWD) -w $(CWD)/src/contrail-webui-third-party --rm=true build-$(OS)-$(DIST)-$(ARCH) python fetch_packages.py -f packages.xml
+	docker run -u $(USER_ID):$(GROUP_ID) -t -v $(CWD):$(CWD) -w $(CWD)/src/third_party --rm=true build-$(OS)-$(DIST)-$(ARCH) python fetch_packages.py
+	docker run -u $(USER_ID):$(GROUP_ID) -t -v $(CWD):$(CWD) -w $(CWD)/src/contrail-webui-third-party --rm=true build-$(OS)-$(DIST)-$(ARCH) python fetch_packages.py -f packages.xml
 	rm -rf src/contrail-web-core/node_modules
 	mkdir src/contrail-web-core/node_modules
 	cp -rf src/contrail-webui-third-party/node_modules/* src/contrail-web-core/node_modules/
@@ -57,7 +60,7 @@ fetch-third-party:
 build-source-%:
 	$(eval PACKAGE := $(patsubst build-source-%,%,$@))
 	(rm -f src/build/packages/${PACKAGE}_* || true)
-	docker run -u 1000 -t -v $(CWD):$(CWD) -w $(CWD)/src --rm=true build-$(OS)-$(DIST)-$(ARCH) make -f packages.make source-package-${PACKAGE}
+	docker run -u $(USER_ID):$(GROUP_ID) -t -v $(CWD):$(CWD) -w $(CWD)/src --rm=true build-$(OS)-$(DIST)-$(ARCH) make -f packages.make source-package-${PACKAGE}
 
 build-binary: \
 	build-binary-contrail-web-core \
@@ -72,7 +75,7 @@ build-binary: \
 build-binary-%:
 	$(eval PACKAGE := $(patsubst build-binary-%,%,$@))
 	(rm -rf src/build/${PACKAGE} || true)
-	docker run -u 1000 -t -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash -c "dpkg-source -x src/build/packages/${PACKAGE}_*.dsc src/build/${PACKAGE}; \
+	docker run -u $(USER_ID):$(GROUP_ID) -t -v $(CWD):$(CWD) -w $(CWD) --rm=true build-$(OS)-$(DIST)-$(ARCH) /bin/bash -c "dpkg-source -x src/build/packages/${PACKAGE}_*.dsc src/build/${PACKAGE}; \
 		cd src/build/${PACKAGE}; sudo apt-get update; dpkg-checkbuilddeps 2>&1|rev|cut -d : -f 1|rev|sed 's,(.*),,g'|xargs sudo apt-get install -y; \
 		cd src/build/${pkg}; debuild --no-lintian -uc -us ${opts}"
 
